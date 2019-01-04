@@ -118,13 +118,26 @@
           params['sort_direction'] = handleFunctionParam(config.sortDirection);
           params['spelling'] = handleFunctionParam(config.spelling);
           params['highlight_fields'] = handleFunctionParam(config.highlightFields);
+          params['search_timeout'] = handleFunctionParam(config.search_timeout); // sdhardesty added timeout parameter
+          params['search_timeout_msg'] = handleFunctionParam(config.search_timeout_msg); // sdhardesty added timeout parameter
 
           $.ajax({
             dataType: "json",
             url: Swiftype.root_url + "/api/v1/public/engines/search.json?callback=?",
+            error:function(jqXHR, textStatus){ // error added by sdhardesty addition
+              if(textStatus === 'timeout'){
+                if(config.search_timeout_msg){
+                  $resultContainer.html("<div id='" + contentCacheId + "' >" + config.search_timeout_msg + "</div>");
+                } else {
+                  $resultContainer.html("<div id='" + contentCacheId + "' >Search has timed out. Please try again later.</div>");
+                }
+                $contentCache.remove();
+              }
+            }, // end sdhardesty error addition
             data: params,
             xhrFields: { withCredentials: true },
-            success: renderSearchResults
+            success: renderSearchResults,
+            timeout: config.search_timeout // timeout added by sdhardesty
           });
         };
 
@@ -170,7 +183,7 @@
         }
 
         config.renderResultsFunction($this.getContext(), data);
-
+        
         if (typeof config.postRenderFunction === 'function') {
           config.postRenderFunction.call($this, data);
         }
@@ -293,6 +306,8 @@
     fetchFields: undefined,
     highlightFields: undefined,
     preRenderFunction: undefined,
+    search_timeout_msg: undefined, // added by sdhardesty
+    search_timeout: 5000, // added by sdhardesty
     postRenderFunction: defaultPostRenderFunction,
     loadingFunction: defaultLoadingFunction,
     renderResultsFunction: defaultRenderResultsFunction,
